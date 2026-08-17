@@ -399,7 +399,7 @@ class Handler(SimpleHTTPRequestHandler):
 def main() -> None:
     load_env_file()
     port = int(os.environ.get("PORT", DEFAULT_PORT))
-    server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    server = ThreadingHTTPServer(("0.0.0.0", port), Handler)
     provider = server_provider()
     has_key = (
         "已設定"
