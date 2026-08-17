@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>電郵編寫助手</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%231f4d3a'/%3E%3Cpath d='M14 20h36v24H14z' fill='none' stroke='%23f4efe4' stroke-width='3'/%3E%3Cpath d='M14 20l18 14 18-14' fill='none' stroke='%23f4efe4' stroke-width='3'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">
+          <span class="mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#f4efe4" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round">
+              <rect x="3.2" y="5.5" width="17.6" height="13" rx="1.6" />
+              <path d="M4 7l8 6.2L20 7" />
+            </svg>
+          </span>
+          <div>
+            <h1>電郵編寫助手</h1>
+            <p>把中文想法寫成可以發出去的電郵</p>
+          </div>
+        </div>
+        <div class="top-actions">
+          <span id="key-status" class="key-status">尚未新增 API 金鑰</span>
+          <button type="button" class="ghost" id="open-settings">設定</button>
+        </div>
+      </header>
+
+      <main class="desk">
+        <section class="composer" aria-label="電郵素材">
+          <div class="field">
+            <span class="label">電郵類型</span>
+            <div class="types" id="email-types" role="listbox" aria-label="選擇電郵類型"></div>
+          </div>
+
+          <div class="grid two">
+            <label class="field">
+              <span class="label">收件人</span>
+              <input id="recipient" type="text" placeholder="例如：Alex / 張經理" autocomplete="off" />
+            </label>
+            <label class="field">
+              <span class="label">你的署名</span>
+              <input id="sender" type="text" placeholder="例如：Chun / 產品經理" autocomplete="name" />
+            </label>
+          </div>
+
+          <label class="field">
+            <span class="label">要回覆的原電郵 <em>可貼上對方來信；留空則寫新電郵</em></span>
+            <textarea id="original-email" rows="8" placeholder="把對方的電郵整封貼喺呢度，包括主題同正文。AI 會先讀過，再按你的中文想法寫回覆。"></textarea>
+          </label>
+
+          <div class="grid two">
+            <label class="field">
+              <span class="label">語氣</span>
+              <select id="tone">
+                <option value="professional">專業禮貌</option>
+                <option value="formal">正式鄭重</option>
+                <option value="friendly">輕鬆友好</option>
+              </select>
+            </label>
+            <label class="field">
+              <span class="label">輸出語言</span>
+              <select id="language">
+                <option value="english">英文</option>
+                <option value="chinese">中文</option>
+                <option value="bilingual">中英對照</option>
+              </select>
+            </label>
+          </div>
+
+          <label class="field">
+            <span class="label">開頭 <em>可固定常用稱呼或背景</em></span>
+            <textarea id="opening" rows="3" placeholder="例如：好久不見；上次站會提到過這個需求；請代為轉達給設計同學…"></textarea>
+          </label>
+
+          <div class="field">
+            <div class="field-head">
+              <span class="label">中文想法 <em>必填，可打字或錄音</em></span>
+              <button type="button" class="ghost small record" id="record">開始錄音</button>
+            </div>
+            <textarea id="idea" rows="8" placeholder="例如：想約對方這週四下午同步一下改版進度，如果來不及就改下週一，另外請他們把最新原型連結發我。"></textarea>
+            <p id="voice-status" class="voice-status" hidden></p>
+          </div>
+
+          <label class="field">
+            <span class="label">結尾 <em>可固定請求、時間點或簽名</em></span>
+            <textarea id="closing" rows="3" placeholder="例如：請週五中午前回覆；謝謝；Chun"></textarea>
+          </label>
+
+          <div class="composer-actions">
+            <button type="button" class="primary" id="generate">寫成電郵</button>
+            <span class="hint">快捷鍵 ⌘ 或 Ctrl + Enter</span>
+          </div>
+        </section>
+
+        <section class="letter-wrap" aria-label="電郵草稿">
+          <article class="letter" id="letter">
+            <div class="letter-toolbar">
+              <span>草稿</span>
+              <div class="letter-tools">
+                <button type="button" class="ghost small" id="copy-subject" disabled>複製主題</button>
+                <button type="button" class="ghost small" id="copy-body" disabled>複製正文</button>
+                <button type="button" class="ghost small" id="copy-all" disabled>全部複製</button>
+              </div>
+            </div>
+            <div id="letter-empty" class="empty">
+              <p>左邊填想法，右邊出電郵。</p>
+              <p class="muted">還沒有金鑰也可以先把常用開頭、結尾存下來，或先試錄音。金鑰之後在「設定」裡貼上即可。</p>
+            </div>
+            <div id="letter-error" class="error" hidden></div>
+            <div id="letter-content" hidden>
+              <p class="subject-kicker">主題</p>
+              <h2 id="subject"></h2>
+              <pre id="body"></pre>
+            </div>
+            <div id="letter-loading" class="loading" hidden>
+              <span class="dot"></span>
+              <span id="loading-text">正在把想法寫成電郵…</span>
+            </div>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="settings" class="settings">
+      <form method="dialog" id="settings-form">
+        <h2>API 設定</h2>
+        <p class="muted">
+          金鑰只保存在這台電腦的瀏覽器裡，不會上傳到別處。也可以稍後把金鑰寫進專案裡的
+          <code>.env</code> 檔案。
+        </p>
+        <label class="field">
+          <span class="label">服務商</span>
+          <select id="provider">
+            <option value="gemini">Google Gemini</option>
+            <option value="openrouter">OpenRouter</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="label">API 金鑰</span>
+          <input id="api-key" type="password" placeholder="貼上 API 金鑰" autocomplete="off" />
+        </label>
+        <label class="field">
+          <span class="label">模型</span>
+          <select id="model"></select>
+        </label>
+        <label class="field" id="model-custom-field" hidden>
+          <span class="label">自訂模型</span>
+          <input id="model-custom" type="text" placeholder="例如 google/gemini-2.5-flash" autocomplete="off" />
+        </label>
+        <p class="muted small" id="provider-help">
+          Gemini 金鑰：開啟
+          <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">Google AI Studio</a>。
+          OpenRouter 金鑰：開啟
+          <a href="https://openrouter.ai/keys" target="_blank" rel="noreferrer">openrouter.ai/keys</a>。
+        </p>
+        <div class="dialog-actions">
+          <button type="submit" class="primary" value="save">儲存</button>
+          <button type="button" class="ghost" id="close-settings" value="cancel">取消</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>
